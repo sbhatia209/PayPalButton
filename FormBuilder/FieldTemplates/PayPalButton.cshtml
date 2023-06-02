@@ -1,0 +1,65 @@
+﻿@using Sitecore.Mvc;
+@using Sitecore.Data;
+@using Sitecore.Data.Fields;
+@using Sitecore.Diagnostics;
+@using System.Web.Mvc.Html
+@using Feature.FormsExtensions
+@using Feature.FormsExtensions.Views
+@using Sitecore.ExperienceForms.Mvc.Html
+
+
+@if (Html.Sitecore().IsExperienceFormsEditMode())
+{
+    <div> PayPal Button Added </div>
+}
+else
+{
+
+    <div id="paypal-button-container"></div>
+
+    <!-- Include the PayPal JavaScript SDK -->
+    https://www.paypal.com/sdk/js?client-id=your-client-id&currency=USD
+
+    <script>
+        var $w = jQuery.noConflict();
+
+        // Render the PayPal button into #paypal-button-container
+        paypal.Buttons({
+
+            // Set up the transaction
+            createOrder: function (data, actions) {
+                if (!$w('form').valid()) {
+                    return false;
+                }
+
+                var price = $w("input[data-sc-field-name^='Default Price']").val();
+                return actions.order.create({
+                    application_context: {
+                        shipping_preference: 'NO_SHIPPING'
+                    },
+                    purchase_units: [{
+                        amount: {
+                            value: price
+                        },
+                        description: 'Purchase ID: ' + purchaseId + ', Purchase Item Type: ' + purchaseItemType
+                    }]
+                });
+            },
+
+            // Finalize the transaction
+            onApprove: function (data, actions) {
+                return actions.order.capture().then(function (orderData) {
+                    // Successful capture! For demo purposes:
+                    console.log('Capture result', orderData, JSON.stringify(orderData, null, 2));
+                    var transaction = orderData.purchase_units[0].payments.captures[0];
+                    alert('Transaction ' + transaction.status + ': ' + transaction.id + '\n\nSee console for all available details');
+                    $w("input[data-sc-field-name^='transactionid']").val(transaction.id);
+                    $w("input[type='submit']").click();
+                });
+            }
+
+
+        }).render('#paypal-button-container');
+
+    </script>
+}
